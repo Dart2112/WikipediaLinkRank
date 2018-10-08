@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 class LinkRank {
 
-    private HashMap<String, Integer> list = new HashMap<>();
+    private HashMap<String, Integer> pageOccurrence = new HashMap<>();
     private List<String> urls = new ArrayList<>();
 
     LinkRank() {
@@ -89,12 +89,13 @@ class LinkRank {
         for (String url : urls) {
             if (i <= 0)
                 continue;
-            //loop through the URls and add the links from then to the list
+            //loop through the URLs and add the links from then to the pageOccurrence
             addLinksForUrl(url);
             i--;
         }
         printList(title);
         generateChart(title);
+        pageOccurrence.clear();
     }
 
     private void addLinksForUrl(String url) {
@@ -115,11 +116,11 @@ class LinkRank {
                     Pattern pattern = Pattern.compile("\\[.*?]");
                     Matcher matcher = pattern.matcher(title);
                     if (!matcher.matches()) {
-                        //If the link is already in the list just add ot the integer, otherwise add it to the list with a 1
-                        if (list.containsKey(title)) {
-                            list.put(title, list.get(title) + 1);
+                        //If the link is already in the pageOccurrence just add ot the integer, otherwise add it to the pageOccurrence with a 1
+                        if (pageOccurrence.containsKey(title)) {
+                            pageOccurrence.put(title, pageOccurrence.get(title) + 1);
                         } else {
-                            list.put(title, 1);
+                            pageOccurrence.put(title, 1);
                         }
                     }
                 }
@@ -131,9 +132,9 @@ class LinkRank {
 
     @SuppressWarnings("unchecked")
     private void printList(String title) {
-        //Sort the list by the value
+        //Sort the pageOccurrence by the value
         //https://stackoverflow.com/questions/21054415/how-to-sort-a-hashmap-by-the-integer-value
-        Object[] a = list.entrySet().toArray();
+        Object[] a = pageOccurrence.entrySet().toArray();
         Arrays.sort(a, (o1, o2) -> ((Map.Entry<String, Integer>) o2).getValue()
                 .compareTo(((Map.Entry<String, Integer>) o1).getValue()));
         System.out.println("Raw list for " + title);
@@ -153,7 +154,7 @@ class LinkRank {
     private void generateChart(String title) {
         DefaultPieDataset data = new DefaultPieDataset();
         //sort the data
-        Object[] a = list.entrySet().toArray();
+        Object[] a = pageOccurrence.entrySet().toArray();
         Arrays.sort(a, (o1, o2) -> ((Map.Entry<String, Integer>) o2).getValue()
                 .compareTo(((Map.Entry<String, Integer>) o1).getValue()));
         int i = 0;
