@@ -17,11 +17,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 class LinkRank {
 
+    //This HashMap will store the titles of links scraped and the number of times that title occurred
     private HashMap<String, Integer> pageOccurrence = new HashMap<>();
     private List<String> urls = new ArrayList<>();
 
@@ -87,43 +86,51 @@ class LinkRank {
     private void generateData(int limit, String title) {
         int i = limit;
         for (String url : urls) {
+            //stop loading pages if we have reached the limit
             if (i <= 0)
-                continue;
-            //loop through the URLs and add the links from then to the pageOccurrence
+                break;
+            //loop through the URLs and add the links from them to the list
             addLinksForUrl(url);
             i--;
         }
+        //print the entire list to console for raw values and debugging
         printList(title);
+        //generate the pie chart JPEG
         generateChart(title);
+        //clear the list to stop duplication
         pageOccurrence.clear();
     }
 
     private void addLinksForUrl(String url) {
         try {
-            //get the HTML and load it with JSoup
+            //Use Jsoup to load the URLs document
             Document doc = Jsoup.connect(url).get();
             //Find all the links in the page
             Elements links = doc.select("a[href]");
+            //Loop through all these links
             for (Element link : links) {
-                //get the title of the link
-                String title = link.text();
                 //get the url of the link
                 String linkURL = link.attr("abs:href");
-                //don't include links without a title and links that aren't on wikipedia
-                if (!title.equals("") && title.length() >= 4 && linkURL.contains("en.wikipedia.org/wiki")) {
-                    //don't include citations
-                    //https://examples.javacodegeeks.com/core-java/util/regex/check-if-a-string-matches-a-pattern/
-                    Pattern pattern = Pattern.compile("\\[.*?]");
-                    Matcher matcher = pattern.matcher(title);
-                    if (!matcher.matches()) {
-                        //If the link is already in the pageOccurrence just add ot the integer, otherwise add it to the pageOccurrence with a 1
-                        if (pageOccurrence.containsKey(title)) {
-                            pageOccurrence.put(title, pageOccurrence.get(title) + 1);
-                        } else {
-                            pageOccurrence.put(title, 1);
-                        }
-                    }
+                //ignore pages that aren't on wikipedia, this is to limit the number of sites we have to load to get the title
+                if (!linkURL.contains("en.wikipedia.org/wiki") || linkURL.startsWith(url)) {
+                    continue;
                 }
+                //get the title of the link by loading the target page
+                String title = Jsoup.connect(linkURL).get().title();
+                //ensure its a wikipedia article by ignoring the link if it doesn't
+                //end with " - Wikipedia" or is in fact a category or file
+                if (!title.endsWith(" - Wikipedia") || title.startsWith("Category:") || title.startsWith("File:")) {
+                    continue;
+                }
+                //remove the " - Wikipedia" from the end of the title as its no longer required
+                title = title.replace(" - Wikipedia", "");
+                //If the link is already in the list just add to the integer, otherwise add it to the list with a value of 1
+                if (pageOccurrence.containsKey(title)) {
+                    pageOccurrence.put(title, pageOccurrence.get(title) + 1);
+                } else {
+                    pageOccurrence.put(title, 1);
+                }
+
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -153,7 +160,7 @@ class LinkRank {
     @SuppressWarnings("unchecked")
     private void generateChart(String title) {
         DefaultPieDataset data = new DefaultPieDataset();
-        //sort the data
+        //sort the data by the value in descending order
         Object[] a = pageOccurrence.entrySet().toArray();
         Arrays.sort(a, (o1, o2) -> ((Map.Entry<String, Integer>) o2).getValue()
                 .compareTo(((Map.Entry<String, Integer>) o1).getValue()));
@@ -161,7 +168,7 @@ class LinkRank {
         for (Object e : a) {
             //get the top 15 items and add them to the chart
             if (i >= 15)
-                continue;
+                break;
             if (((Map.Entry<String, Integer>) e).getValue() > 1) {
                 Integer amount = ((Map.Entry<String, Integer>) e).getValue();
                 String name = ((Map.Entry<String, Integer>) e).getKey();
