@@ -158,7 +158,7 @@ class LinkRank {
     //https://robbamforth.wordpress.com/2008/11/05/java-jfreechart-how-to-save-a-jcfreechart-to-jpeg-file/
 
     @SuppressWarnings("unchecked")
-    private void generateChart(String title) {
+    private void generateChart(String chartTitle) {
         DefaultPieDataset data = new DefaultPieDataset();
         //sort the data by the value in descending order
         Object[] a = pageOccurrence.entrySet().toArray();
@@ -170,19 +170,21 @@ class LinkRank {
             if (i >= 15)
                 break;
             if (((Map.Entry<String, Integer>) e).getValue() > 1) {
+                //extract the title and amount from the array value
+                String title = ((Map.Entry<String, Integer>) e).getKey();
                 Integer amount = ((Map.Entry<String, Integer>) e).getValue();
-                String name = ((Map.Entry<String, Integer>) e).getKey();
-                data.setValue(name, amount);
+                //add the value to our data set
+                data.setValue(title, amount);
                 i++;
             }
         }
-        JFreeChart chart = ChartFactory.createPieChart(title, data, false, true, false);
+        //make the chart with tooltips but not a legend
+        JFreeChart chart = ChartFactory.createPieChart(chartTitle, data, false, true, false);
         PiePlot plot = (PiePlot) chart.getPlot();
         plot.setSectionOutlinesVisible(false);
-        plot.setNoDataMessage("No data available");
-        //save the chart as a JPEG in the current directory
+        //save the chart as a JPEG in the images directory directory
         try {
-            String fileName = title + ".jpg";
+            String fileName = chartTitle + ".jpg";
             saveToFile(chart, fileName);
         } catch (IOException e) {
             e.printStackTrace();
