@@ -23,6 +23,7 @@ class LinkRank {
     //This HashMap will store the titles of links scraped and the number of times that title occurred
     private HashMap<String, Integer> pageOccurrence = new HashMap<>();
     private List<String> urls = new ArrayList<>();
+    private HashMap<String, String> titleCache = new HashMap<>();
 
     LinkRank() {
         //create a list of the urls to index
@@ -115,15 +116,26 @@ class LinkRank {
                 if (!linkURL.contains("en.wikipedia.org/wiki") || linkURL.startsWith(url)) {
                     continue;
                 }
-                //get the title of the link by loading the target page
-                String title = Jsoup.connect(linkURL).get().title();
-                //ensure its a wikipedia article by ignoring the link if it doesn't
-                //end with " - Wikipedia" or is in fact a category or file
-                if (!title.endsWith(" - Wikipedia") || title.startsWith("Category:") || title.startsWith("File:")) {
-                    continue;
+                String title;
+                if (titleCache.containsKey(linkURL)) {
+                    title = titleCache.get(linkURL);
+                } else {
+                    //get the title of the link by loading the target page
+                    title = Jsoup.connect(linkURL).get().title();
+                    //ensure its a wikipedia article by ignoring the link if it doesn't
+                    //end with " - Wikipedia" or is in fact a category or file
+                    if (!title.endsWith(" - Wikipedia") || title.startsWith("Category:") || title.startsWith("File:") ||
+                            title.startsWith("Template:") || title.startsWith("Template talk:")
+                            || title.startsWith("Wikipedia:") || title.startsWith("Portal:") || title.startsWith("Talk:")
+                            || title.startsWith("User talk:") || title.startsWith("Help:") || title.startsWith("User contributions")
+                            || title.startsWith("Pages that link to") || title.equals("Recent changes")
+                            || title.equals("Related changes") || title.equals("Special pages")) {
+                        continue;
+                    }
+                    //remove the " - Wikipedia" from the end of the title as its no longer required
+                    title = title.replace(" - Wikipedia", "");
+                    titleCache.put(linkURL, title);
                 }
-                //remove the " - Wikipedia" from the end of the title as its no longer required
-                title = title.replace(" - Wikipedia", "");
                 //If the link is already in the list just add to the integer, otherwise add it to the list with a value of 1
                 if (pageOccurrence.containsKey(title)) {
                     pageOccurrence.put(title, pageOccurrence.get(title) + 1);
